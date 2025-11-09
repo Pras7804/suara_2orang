@@ -1,20 +1,19 @@
-# --- Core Streamlit ---
-streamlit
-streamlit-audiorecorder
+# =====================================
+# Streamlit Cloud Compatible Requirements
+# Tested on Python 3.11
+# =====================================
 
-# --- Audio Processing ---
+streamlit==1.38.0
+streamlit-audiorecorder==0.0.4
 librosa==0.10.1
 pydub==0.25.1
 audioread==3.0.1
 soundfile==0.12.1
 numpy==1.26.4
-
-# --- Data & ML Tools ---
 pandas==2.2.3
 scikit-learn==1.5.2
 joblib==1.4.2
 
-# --- Opsional: Jika kamu pakai TSFEL di ekstraksi fitur ---
-# Jika TSFEL digunakan, aktifkan baris berikut:
+# Optional: Uncomment if using TSFEL feature extraction
 # tsfel==0.1.5
 # scipy==1.12.0
