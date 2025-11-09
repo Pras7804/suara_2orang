@@ -9,3 +9,4 @@ scikit-learn
 tsfel
 pydub
 audioread
+streamlit-audiorec
