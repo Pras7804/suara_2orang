@@ -1,13 +1,11 @@
 import streamlit as st
-import sounddevice as sd
 import numpy as np
-import scipy.io.wavfile as wav
 import joblib
 import librosa
 import tsfel
 import pandas as pd
-from sklearn.preprocessing import StandardScaler
-from sklearn.feature_selection import SelectKBest
+from pydub import AudioSegment
+from audiorecorder import audiorecorder
 
 # ===============================
 # Load Model dan Konfigurasi
@@ -39,44 +37,39 @@ def extract_features(file_path):
     features = tsfel.time_series_features_extractor(cfg, y, fs=sr).fillna(0)
     features = features.reindex(columns=feature_cols, fill_value=0)
 
-    # Normalisasi (pakai scaler yang sama saat training)
     X_scaled = scaler.transform(features)
-
     return X_scaled
 
 # ===============================
-# Rekam Suara Langsung
+# Input Suara (Rekam / Upload)
 # ===============================
-st.subheader("🎙️ Rekam suara langsung")
-duration = st.slider("Durasi rekaman (detik)", 1, 5, 3)
+st.subheader("🎙️ Rekam suara langsung atau upload file")
 
-if st.button("▶️ Mulai Rekam"):
-    fs = 16000
-    st.info("🎧 Merekam...")
-    recording = sd.rec(int(duration * fs), samplerate=fs, channels=1, dtype="int16")
-    sd.wait()
-    wav.write("input.wav", fs, recording)
-    st.session_state.recorded_file = "input.wav"
-    st.session_state.pred_ready = True
-    st.success("✅ Rekaman selesai!")
+option = st.radio("Pilih metode input:", ["🎙️ Rekam Suara", "📂 Upload File"])
+file_path = None
 
-    with open("input.wav", "rb") as f:
-        st.audio(f.read(), format="audio/wav")
+if option == "🎙️ Rekam Suara":
+    st.write("Tekan tombol di bawah ini untuk mulai / berhenti merekam:")
+    audio = audiorecorder("Mulai / Berhenti Rekam", "🎤 Rekam")
 
-# ===============================
-# Upload File Suara
-# ===============================
-st.subheader("📂 Atau upload file suara (.wav)")
-uploaded_file = st.file_uploader("Pilih file .wav", type=["wav"])
+    if len(audio) > 0:
+        file_path = "input_rekam.wav"
+        audio.export(file_path, format="wav")
+        st.audio(file_path, format="audio/wav")
+        st.session_state.recorded_file = file_path
+        st.session_state.pred_ready = True
+        st.success("✅ Rekaman berhasil disimpan!")
 
-if uploaded_file is not None:
-    with open("uploaded.wav", "wb") as f:
-        f.write(uploaded_file.read())
-    st.session_state.recorded_file = "uploaded.wav"
-    st.session_state.pred_ready = True
-    st.success("✅ File berhasil diupload!")
-
-    st.audio(uploaded_file, format="audio/wav")
+else:
+    uploaded_file = st.file_uploader("Pilih file suara (.wav)", type=["wav"])
+    if uploaded_file is not None:
+        file_path = f"uploaded_{uploaded_file.name}"
+        with open(file_path, "wb") as f:
+            f.write(uploaded_file.read())
+        st.audio(file_path, format="audio/wav")
+        st.session_state.recorded_file = file_path
+        st.session_state.pred_ready = True
+        st.success("✅ File berhasil diupload!")
 
 # ===============================
 # Prediksi Speaker & Command
@@ -86,27 +79,29 @@ if st.session_state.pred_ready:
         file_path = st.session_state.recorded_file
         st.info("🔎 Mengekstrak fitur dan memproses prediksi...")
 
-        # Ekstraksi dan scaling fitur
-        X_scaled = extract_features(file_path)
+        try:
+            X_scaled = extract_features(file_path)
 
-        # Seleksi fitur
-        X_cmd = selector_cmd.transform(X_scaled)
-        X_spk = selector_spk.transform(X_scaled)
+            # Seleksi fitur
+            X_cmd = selector_cmd.transform(X_scaled)
+            X_spk = selector_spk.transform(X_scaled)
 
-        # Prediksi Speaker
-        proba_spk = model_speaker.predict_proba(X_spk)[0]
-        confidence_spk = np.max(proba_spk)
-        speaker_pred = model_speaker.classes_[np.argmax(proba_spk)]
+            # Prediksi Speaker
+            proba_spk = model_speaker.predict_proba(X_spk)[0]
+            confidence_spk = np.max(proba_spk)
+            speaker_pred = model_speaker.classes_[np.argmax(proba_spk)]
 
-        # Threshold untuk unknown
-        threshold = 0.6
-        if confidence_spk < threshold:
-            st.error(f"❌ Suara tidak dikenali (unknown speaker). [confidence={confidence_spk:.2f}]")
-        else:
-            # Prediksi Command
-            command_pred = model_command.predict(X_cmd)[0]
-            st.success(f"🗣️ Speaker: {speaker_pred} (confidence={confidence_spk:.2f})")
-            st.info(f"🎧 Command: {command_pred}")
+            # Threshold untuk unknown
+            threshold = 0.6
+            if confidence_spk < threshold:
+                st.error(f"❌ Suara tidak dikenali (unknown speaker). [confidence={confidence_spk:.2f}]")
+            else:
+                command_pred = model_command.predict(X_cmd)[0]
+                st.success(f"🗣️ Speaker: {speaker_pred} (confidence={confidence_spk:.2f})")
+                st.info(f"🎧 Command: {command_pred}")
+
+        except Exception as e:
+            st.error(f"Terjadi error saat prediksi: {e}")
 
 # ===============================
 # Tombol Reset
