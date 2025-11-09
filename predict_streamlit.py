@@ -5,7 +5,7 @@ import librosa
 import tsfel
 import pandas as pd
 from pydub import AudioSegment
-from audiorecorder import audiorecorder
+from st_audiorec import st_audiorec   # ✅ GANTI INI
 
 # ===============================
 # Load Model dan Konfigurasi
@@ -49,12 +49,13 @@ option = st.radio("Pilih metode input:", ["🎙️ Rekam Suara", "📂 Upload Fi
 file_path = None
 
 if option == "🎙️ Rekam Suara":
-    st.write("Tekan tombol di bawah ini untuk mulai / berhenti merekam:")
-    audio = audiorecorder("Mulai / Berhenti Rekam", "🎤 Rekam")
+    st.write("Tekan tombol di bawah ini untuk mulai merekam:")
+    audio_bytes = st_audiorec()  # ✅ GANTI DENGAN st_audiorec
 
-    if len(audio) > 0:
+    if audio_bytes is not None:
         file_path = "input_rekam.wav"
-        audio.export(file_path, format="wav")
+        with open(file_path, "wb") as f:
+            f.write(audio_bytes)
         st.audio(file_path, format="audio/wav")
         st.session_state.recorded_file = file_path
         st.session_state.pred_ready = True
