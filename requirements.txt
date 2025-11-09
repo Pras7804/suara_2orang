@@ -1,11 +1,9 @@
 streamlit
-sounddevice
-numpy
-scipy
 librosa
+numpy
 pandas
-scikit-learn
 tsfel
+scikit-learn
+pydub
+audiorecorder
 joblib
-tqdm
-
