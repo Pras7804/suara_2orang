@@ -1,9 +1,20 @@
+# --- Core Streamlit ---
 streamlit
-librosa
-numpy
-pandas
-tsfel
-scikit-learn
-pydub
-audiorecorder
-joblib
+streamlit-audiorecorder
+
+# --- Audio Processing ---
+librosa==0.10.1
+pydub==0.25.1
+audioread==3.0.1
+soundfile==0.12.1
+numpy==1.26.4
+
+# --- Data & ML Tools ---
+pandas==2.2.3
+scikit-learn==1.5.2
+joblib==1.4.2
+
+# --- Opsional: Jika kamu pakai TSFEL di ekstraksi fitur ---
+# Jika TSFEL digunakan, aktifkan baris berikut:
+# tsfel==0.1.5
+# scipy==1.12.0
